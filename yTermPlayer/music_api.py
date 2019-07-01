@@ -7,7 +7,6 @@ Special thanks for these libraries and their contributors:
 - pafy
 - mpv
 '''
-import pafy
 import mpv
 import pickle
 import os
@@ -17,6 +16,7 @@ from random import randint
 import math
 from .settings import PL_DIR
 import locale
+from .playlist import Playlist
 
 
 def structure_time(hours, minutes, seconds, *args):
@@ -46,7 +46,7 @@ class YoutubePlayer:
         # Open the paylists dict from pickle here
         self.saved_lists = []
         # Currently playing song name
-        self._currentSong = "None"
+        self._current_song = "None"
         # Current song index
         self.index = 0
         # #New playlist?
@@ -93,20 +93,18 @@ class YoutubePlayer:
         return self.repeat_mode
 
     def init_playlist(self, url):
-        self.url = url
-        self.playlist = pafy.get_playlist(url)
-        self.queue_len = len(self.playlist['items'])
+        self.playlist = Playlist(url)
 
     def save_current_list(self):
         try:
-            filename = PL_DIR + "/" + self.playlist['title']
+            filename = PL_DIR + "/" + self.playlist.title
         except Exception:  # TODO: Define proper exception type I suppose it's a KeyError
             return False
         self.saved_lists.append(filename)
         with open(filename, 'wb') as handler:
             pickle.dump({
-                        'url': self.url,
-                        'name': self.playlist['title']
+                        'url': self.playlist.url,
+                        'name': self.playlist.title
                         },
                         handler, pickle.HIGHEST_PROTOCOL)
         return True
@@ -118,36 +116,11 @@ class YoutubePlayer:
         filename = PL_DIR + "/" + list_name
         with open(filename, 'rb') as handler:
             url = pickle.load(handler)['url']
-        self.playlist = pafy.get_playlist(url)
-        self.queue_len = len(self.playlist['items'])
+        self.playlist = Playlist(url)
         return True
 
     def get_saved_lists(self):
         return self.saved_lists
-
-    def get_list_data(self):
-        self.list_data = []
-        # In case of empty/inexistent list
-        if(not self.playlist):
-            return self.list_data
-        for every_object in self.playlist['items']:
-            temp_details = {}
-            temp_details["title"] = str(every_object['pafy'].title)
-            temp_details['author'] = str(every_object['pafy'].author)
-            time = str(every_object['pafy'].duration).split(":")
-            temp_details['duration'] = structure_time(*time)
-            self.list_data.append(temp_details)
-        return self.list_data
-
-    def get_url_and_name(self, index):
-        try:
-            return [
-                self.playlist['items'][int(index)]['pafy'].getbestaudio().url,
-                self.playlist['items'][int(index)]['pafy'].title
-            ]
-        except Exception as error:
-            print(f"There is an error in fetching this {error}")
-            return False
 
     def get_next_index(self):
         try:
@@ -211,9 +184,9 @@ class YoutubePlayer:
         if math.isnan(self.index):
             pass
         # Play current index
-        details = self.get_url_and_name(index)
-        url = details[0]
-        self._currentSong = details[1]
+        video = self.playlist[index]
+        url = video.url
+        self.current_song = video.title
         if (url is False):
             return False
         self.player.play(url)
@@ -292,8 +265,13 @@ class YoutubePlayer:
             return False
         self.play_at_index(_prev_index)
 
-    def current_song_name(self):
-        return self._currentSong
+    @property
+    def current_song(self):
+        return self._current_song
+
+    @current_song.setter
+    def current_song(self, value):
+        self._current_song = value
 
     def check_togglerLock(self):
         self._lock_mutex.acquire()

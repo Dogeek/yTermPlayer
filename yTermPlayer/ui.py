@@ -9,35 +9,33 @@ Special thanks for these libraries and their contributors:
 - python-mpv
 '''
 import urwid
-import time,os,sys
 from .music_api import YoutubePlayer
 
 LIST_LOCK = True
 
-class my_bar(urwid.ProgressBar):
-    def get_text(self):
-            return ""
 
 palette = [
     ('reversed', 'standout', ''),
     ('b', 'black', 'dark gray'),
     ('highlight', 'black', 'light blue'),
-    ('bg', 'black', 'dark blue'),]
+    ('bg', 'black', 'dark blue')
+]
 
-class player_ui(YoutubePlayer):
+
+class PlayerUI(YoutubePlayer):
     def __init__(self):
-        self._list_updated = False #Update this variable as True only when a new list has been initlaized
-        self.current_marked_index =- 1 #To highlight currently playing song
+        self._list_updated = False  # Update this variable as True only when a new list has been initlaized
+        self.current_marked_index = -1  # To highlight currently playing song
         self.player_object = YoutubePlayer()
         self._isplayerUI = False
         self._play_pause_lock = False
         self.top = self.start_screen()
 
-    def update_name(self,_loop, _data):
+    def update_name(self, _loop, _data):
         global LIST_LOCK
         # Update list
-        if(self._list_updated):
-            _new_list=[]
+        if (self._list_updated):
+            _new_list = []
             heading = urwid.Columns([(6,urwid.Text(u"Track",align='left')),
                                     (15,urwid.Text(u"Duration",align='left')),
                                     urwid.Text(u"Title",align='left'),
@@ -45,29 +43,27 @@ class player_ui(YoutubePlayer):
                                     dividechars=0, focus_column=None,
                                     min_width=1, box_columns=None
                                     )
-            _list_data=self.player_object.get_list_data()
-            track_no=1 #Increament this in loop
+            _list_data = self.player_object.playlist.videos
+            track_no = 1  # Increament this in loop
             for _item in _list_data:
                 _new_list.append(urwid.AttrMap(urwid.Columns(
                     [
-                    (6,urwid.Text(str(track_no), align = 'left')),
-                    (15,my_Text(_item["duration"], align = 'left')),
-                    my_Text(_item["title"], align='left'),
-                    my_Text(_item["author"], align='left')
+                        (6, urwid.Text(str(track_no), align='left')),
+                        (15, Text(_item.duration, align='left')),
+                        Text(_item.title, align='left'),
+                        Text(_item.author, align='left')
                     ],
-                    dividechars = 0, focus_column = None, min_width = 1,
-                    box_columns = None),
-                    None,focus_map = 'reversed'))
+                    dividechars=0, focus_column=None, min_width=1,
+                    box_columns=None),
+                    None, focus_map='reversed'))
                 track_no = track_no + 1
             self.list[:] = _new_list
             self.playlistbox.set_focus(0, coming_from=None)
-            self._list_updated=False
-        #Update player second by second things
+            self._list_updated = False
+        # Update player second by second things
         if(self._isplayerUI):
             if(not self._play_pause_lock):
-                self.txt2_2.set_text("Playing: " +
-                                    str(self.player_object.current_song_name())
-                                    )
+                self.txt2_2.set_text(f"Playing: {self.player_object.current_song}")
             temp = self.player_object.get_time_details()
             self.pb.set_completion(temp['percentage'])
             self.txt2_1.set_text(str(temp['cur_time']
@@ -117,29 +113,29 @@ class player_ui(YoutubePlayer):
         return self.ui_object
 
     def make_player_ui(self):
-        #Draws the main player UI
-        #Header
-        self.txt2_1 = urwid.Text("--/--",align='left')
-        self.txt2_2 = urwid.Text("Playing: None",align='center')
-        self.txt2_3 = urwid.Text(u"Mode: Repeat off",align='right')
-        cols=urwid.Columns(
+        # Draws the main player UI
+        # Header
+        self.txt2_1 = urwid.Text("--/--", align='left')
+        self.txt2_2 = urwid.Text("Playing: None", align='center')
+        self.txt2_3 = urwid.Text(u"Mode: Repeat off", align='right')
+        cols = urwid.Columns(
                             [self.txt2_1, self.txt2_2, self.txt2_3],
                             dividechars=0, focus_column=None,
                             min_width=1, box_columns=None
                             )
         head_widget=urwid.Pile([cols],focus_item=None)
         head_final_widget=self.body=urwid.LineBox(head_widget, title='Terminal Youtube Player', title_align='center', tlcorner='┌', tline='─', lline='│', trcorner='┐', blcorner='└', rline='│', bline='─', brcorner='┘')
-        #body
+        # body
         self.list=urwid.SimpleFocusListWalker([])
         heading=urwid.Columns([(6,urwid.Text(u"Track",align='left')),(15,urwid.Text(u"Duration",align='left')),urwid.Text(u"Title",align='left'),urwid.Text(u"Artist",align='left')], dividechars=0, focus_column=None, min_width=1, box_columns=None)
         self.playlistbox=urwid.ListBox(self.list)
         self.body_pile=urwid.Pile([(1,urwid.Filler(heading,valign='top',height='pack', min_height=None, top=0, bottom=0)),(1,urwid.Filler(urwid.Divider())),self.playlistbox],focus_item=2)
         self.body=urwid.LineBox(self.body_pile, title="", title_align='center', tlcorner='┌', tline='─', lline='│', trcorner='┐', blcorner='└', rline='│', bline='─', brcorner='┘')
-        #Footer Progress bar
-        self.pb = my_bar("reversed","highlight" )
+        # Footer Progress bar
+        self.pb = ProgressBar("reversed", "highlight")
         self.pb.set_completion(0)
-        self.pb_text=urwid.Text("",align='right')
-        footer_widget=urwid.Columns([self.pb,(14,self.pb_text)],dividechars=0, focus_column=None, min_width=1, box_columns=None)
+        self.pb_text = urwid.Text("", align='right')
+        footer_widget = urwid.Columns([self.pb, (14, self.pb_text)], dividechars=0, focus_column=None, min_width=1, box_columns=None)
         #Final player_ui object
         player_ui_object=urwid.Frame(self.body, header=head_final_widget, footer=footer_widget, focus_part='body')
         return urwid.Padding(player_ui_object,right=0,left=0)
@@ -259,21 +255,29 @@ class player_ui(YoutubePlayer):
         except:
             pass
 
-class my_Text(urwid.Text):
+
+class Text(urwid.Text):
     def selectable(self):
         return True
+
     def keypress(self, size, key):
-        global LIST_LOCK #CAN't FIND ANY OTHER WAY THAN THIS TO CHANGE THE VARIABLES OF MY player_ui CLASS
-        if(key=='enter'):
+        global LIST_LOCK  # CAN't FIND ANY OTHER WAY THAN THIS TO CHANGE THE
+                          # VARIABLES OF MY player_ui CLASS
+        if(key == 'enter'):
             LIST_LOCK = False
         elif(key == 'q'):
             raise urwid.ExitMainLoop()
         return key
 
 
+class ProgressBar(urwid.ProgressBar):
+    def get_text(self):
+        return ""
+
+
 if __name__ == "__main__":
-    new_player = player_ui()
+    new_player = PlayerUI()
     ui = new_player.draw_ui()
-    loop = urwid.MainLoop(ui, palette, unhandled_input = new_player.handle_keys)
+    loop = urwid.MainLoop(ui, palette, unhandled_input=new_player.handle_keys)
     loop.set_alarm_in(2, new_player.update_name)
     loop.run()
