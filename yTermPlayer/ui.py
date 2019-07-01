@@ -84,13 +84,13 @@ class player_ui(YoutubePlayer):
                                                                 'highlight':None
                                                                 })
             #Mark new
-            self.list[int(self.player_object.get_index())].set_attr_map({
+            self.list[int(self.player_object.index)].set_attr_map({
                                                                 None:'highlight'
                                                                 })
-            self.current_marked_index=int(self.player_object.get_index())
+            self.current_marked_index=int(self.player_object.index)
         #Change focus of liswalker dynamically
         if(self.player_object._song_changed):
-            self.playlistbox.set_focus(self.player_object.get_index(),
+            self.playlistbox.set_focus(self.player_object.index,
                                        coming_from=None)
             self.player_object._song_changed = False
         #if no global list lock, it means enter has been pressed
@@ -197,7 +197,7 @@ class player_ui(YoutubePlayer):
 
     def init_list_and_listui(self,url):
         #New list has been loaded,remake the UI
-        self.player_object.initPlaylist(url)
+        self.player_object.init_playlist(url)
         self.player_object.start_playing()
         self._list_updated=True
         self._isplayerUI=True
